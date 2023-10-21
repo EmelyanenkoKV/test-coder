@@ -1,0 +1,53 @@
+.reg-form {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    max-width: 585px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+}
+
+.reg-form__slider {
+    position: relative;
+    overflow: hidden;
+    width: 100%;
+    max-width: 370px;
+    height: 320px;
+}
+
+.reg-form__slider-container {
+    display: flex;
+    transition: transform 0.3s ease-in-out;
+}
+
+.reg-form__slide {
+    flex: 0 0 100%;
+    width: 100%;
+    opacity: 0;
+    padding: 10px;
+    box-sizing: border-box;
+}
+
+.reg-form__slider-active {
+    opacity: 1;
+}
+
+.reg-form__controls {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 10px;
+    position: absolute;
+    width: 100%;
+    top: 25px;
+    right: -45px;
+    z-index: -111;
+}
+
+@media (max-width: 768px) {
+    .reg-form__controls {
+        right: 0;
+        top: -70px;
+    }
+}
