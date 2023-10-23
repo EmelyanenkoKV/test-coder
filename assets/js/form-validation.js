@@ -47,86 +47,81 @@ function validateStep(stepId) {
 
     let isValid = false;
 
-    if (stepId === "step-profession" || stepId === "step-age") {
-        const selectedValueFromFunction = getSelectedValue(stepId);
-        const fieldName = stepId.replace("step-", "");
-        const hiddenInput = slide.querySelector(`#${fieldName}Input`);
+    switch (stepId) {
+        case "step-profession":
+        case "step-age":
+            const selectedValueFromFunction = getSelectedValue(stepId);
+            const fieldName = stepId.replace("step-", "");
+            const hiddenInput = slide.querySelector(`#${fieldName}Input`);
 
+            isValid = hiddenInput
+                ? (selectedValueFromFunction
+                    ? (hiddenInput.value = selectedValueFromFunction, selectError.textContent = '', selectErrorWrap.style.display = 'none', true)
+                    : (selectError.textContent = 'Please select an option', selectErrorWrap.style.display = 'block', false))
+                : false;
+            break;
 
-        if (hiddenInput) {
-            if (selectedValueFromFunction) {
-                hiddenInput.value = selectedValueFromFunction;
-                selectError.textContent = '';
-                selectErrorWrap.style.display = 'none';
-                isValid = true;
-            } else {
-                selectError.textContent = 'Please select an option';
+        case "step-location":
+            const addressInput = slide.querySelector('.select__header-input');
+            const addressValue = addressInput.value.trim();
+
+            if (!addressValue) {
+                selectError.textContent = 'Please enter your address';
                 selectErrorWrap.style.display = 'block';
             }
-        }
-    }
 
-    if (stepId === "step-location") {
-        const addressInput = slide.querySelector('.select__header-input');
-        const addressValue = addressInput.value.trim();
+            const addressRegex = /^[A-Za-z0-9, ]+$/;
 
-        if (!addressValue) {
-            selectError.textContent = 'Please enter your address';
-            selectErrorWrap.style.display = 'block';
-        }
+            if (!addressRegex.test(addressValue)) {
+                selectError.textContent = 'Please enter a valid address';
+                selectErrorWrap.style.display = 'block';
+                break;
+            } else {
+                clearErrors(stepId);
+                isValid = true;
+            }
+            break;
 
-        const addressRegex = /^[A-Za-z0-9, ]+$/;
+        case "step-email":
+            const emailInput = slide.querySelector('.select__header-input');
+            const emailValue = emailInput.value.trim();
+            selectError.textContent = '';
 
-        if (!addressRegex.test(addressValue)) {
-            selectError.textContent = 'Please enter a valid address';
-            selectErrorWrap.style.display = 'block';
-            return false;
-        } else {
+            if (!emailValue) {
+                selectError.textContent = 'Please enter your email';
+                selectErrorWrap.style.display = 'block';
+            } else {
+                const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
+
+                if (!emailRegex.test(emailValue)) {
+                    selectError.textContent = 'Please enter a valid email address';
+                    selectErrorWrap.style.display = 'block';
+                } else {
+                    isValid = true;
+                }
+            }
+            break;
+
+        case "step-password":
+            const passwordInput = slide.querySelector('.select__header-input');
+            const passwordValue = passwordInput.value;
+
+            let lengthError = '';
+
+            if (passwordValue.length < 8) {
+                lengthError = 'Password must be at least 8 characters long';
+            }
+
+            if (lengthError) {
+                selectError.textContent = lengthError;
+                selectErrorWrap.style.display = 'block';
+                return false;
+            }
+
             clearErrors(stepId);
             isValid = true;
-        }
+            break;
     }
-
-    if (stepId === "step-email") {
-        const emailInput = slide.querySelector('.select__header-input');
-        const emailValue = emailInput.value.trim();
-        selectError.textContent = '';
-
-        if (!emailValue) {
-            selectError.textContent = 'Please enter your email';
-            selectErrorWrap.style.display = 'block';
-        } else {
-            const emailRegex = /^[a-zA-Z0-9._-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,4}$/;
-
-            if (!emailRegex.test(emailValue)) {
-                selectError.textContent = 'Please enter a valid email address';
-                selectErrorWrap.style.display = 'block';
-            } else {
-                isValid = true;
-            }
-        }
-    }
-
-    if (stepId === "step-password") {
-        const passwordInput = slide.querySelector('.select__header-input');
-        const passwordValue = passwordInput.value;
-
-        let lengthError = '';
-
-        if (passwordValue.length < 8) {
-            lengthError = 'Password must be at least 8 characters long';
-        }
-
-        if (lengthError) {
-            selectError.textContent = lengthError;
-            selectErrorWrap.style.display = 'block';
-            return false;
-        }
-
-        clearErrors(stepId);
-        isValid = true;
-    }
-
 
     if (isValid) {
         selectError.textContent = '';
@@ -284,41 +279,44 @@ function showThankYouMessage() {
 }
 
 function handleResponseFromServer(responseData) {
-    if (responseData.status === 'error' && responseData.errors) {
+    const handlers = {
+        'error': handleServerError,
+        'success': handleSuccess,
+        'server_error': handleServerUnavailable,
+    };
 
-        // Handling server errors
-
-        responseData.errors.forEach(error => {
-            const fieldName = error.name;
-            const errorMessage = error.message;
-            const errorElement = getSlideElement(`step-${fieldName}`)?.querySelector('.select__error');
-            errorElement.textContent = errorMessage;
-            const selectErrorWrap = getSlideElement(`step-${fieldName}`)?.querySelector('.select__error-wrap');
-            selectErrorWrap.style.display = 'block';
-        });
-    } else if (responseData.status === 'success') {
-
-        // Handling a successful response
-
-        const currentIndex = Array.from(slides).findIndex(slide => slide.id === currentStepId);
-        if (currentIndex < slides.length - 1) {
-            showStep(slides[currentIndex + 1].id);
-        } else {
-            nextButton.classList.add('controls__next--start');
-            nextButton.disabled = true;
-            setTimeout(() => {
-                showThankYouMessage()
-            }, 100);
-        }
-    } else if (responseData.status === 'server_error') {
-
-        // Handling a server error when the server is unavailable
-
-        const selectError = getSlideElement(currentStepId)?.querySelector('.select__error');
-        selectError.textContent = 'Server is currently unavailable. Please try again later.';
-        const selectErrorWrap = getSlideElement(currentStepId)?.querySelector('.select__error-wrap');
-        selectErrorWrap.style.display = 'block';
+    if (handlers[responseData.status]) {
+        handlers[responseData.status]();
     }
+}
+
+function handleServerError() {
+    responseData.errors.forEach(error => {
+        const fieldName = error.name;
+        const errorMessage = error.message;
+        const errorElement = getSlideElement(`step-${fieldName}`)?.querySelector('.select__error');
+        errorElement.textContent = errorMessage;
+        const selectErrorWrap = getSlideElement(`step-${fieldName}`)?.querySelector('.select__error-wrap');
+        selectErrorWrap.style.display = 'block';
+    })
+}
+
+function handleSuccess() {
+    const currentIndex = Array.from(slides).findIndex(slide => slide.id === currentStepId);
+    if (currentIndex < slides.length - 1) {
+        showStep(slides[currentIndex + 1].id);
+    } else {
+        nextButton.classList.add('controls__next--start');
+        nextButton.disabled = true;
+        setTimeout(() => showThankYouMessage(), 100);
+    }
+}
+
+function handleServerUnavailable() {
+    const selectError = getSlideElement(currentStepId)?.querySelector('.select__error');
+    selectError.textContent = 'Server is currently unavailable. Please try again later.';
+    const selectErrorWrap = getSlideElement(currentStepId)?.querySelector('.select__error-wrap');
+    selectErrorWrap.style.display = 'block';
 }
 
 showStep(currentStepId);

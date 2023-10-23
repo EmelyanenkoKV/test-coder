@@ -5,11 +5,7 @@ const emailError = document.getElementById("email-error");
 loginForm.addEventListener("submit", function (e) {
     e.preventDefault();
 
-    if (!validateEmail(emailInput.value)) {
-        emailError.style.display = "block";
-    } else {
-        emailError.style.display = "none";
-    }
+    emailError.style.display = validateEmail(emailInput.value) ? "none" : "block";
 });
 
 function validateEmail(email) {
